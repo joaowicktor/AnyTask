@@ -4,6 +4,7 @@ using AnyTask.API.Data.Repositories;
 using AnyTask.API.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -30,7 +31,10 @@ namespace AnyTask.API.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<User>> ListUsers()
         {
-            return Ok(_uow.UserRepository.FindAll());
+            var lstUsers = _uow.UserRepository.FindAll()
+                .Select(u => new User(u.Id, u.Name, u.Email, null));
+
+            return Ok(lstUsers);
         }
 
         /// <summary>
@@ -42,17 +46,20 @@ namespace AnyTask.API.Controllers
         {
             try
             {
-                if (await _uow.UserRepository.FindByEmailAsync(user.Email) != null)
-                    return BadRequest(new ErrorMessage("Email already registered"));
+                var userExists = await _uow.UserRepository.FindByCondition(u => u.Email == user.Email)
+                    .SingleOrDefaultAsync();
+
+                if (userExists != null)
+                    return BadRequest(new Response(false, "Email already registered"));
 
                 user.Password = user.Password.SHA256Encrypt();
                 _uow.UserRepository.Create(user);
                 var rows = await _uow.CommitAsync();
 
                 if (rows == 0)
-                    return BadRequest(new ErrorMessage("Something went wrong when create user"));
+                    return BadRequest(new Response(false, "Something went wrong when create user"));
 
-                return Ok(new { message = "User create successfully!" });
+                return Ok(new Response(true, "User create successfully!"));
             }
             catch (Exception e)
             {

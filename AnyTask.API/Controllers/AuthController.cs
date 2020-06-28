@@ -1,7 +1,8 @@
 ﻿using AnyTask.API.Data.Entities;
-using AnyTask.API.Data.Repositories;
+using AnyTask.API.Data.Interfaces;
 using AnyTask.API.Helpers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace AnyTask.API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<dynamic>> Login([FromBody] UserLogin login)
         {
-            var user = await _uow.UserRepository.FindByEmailAsync(login.Email);
+            var user = await _uow.UserRepository.FindByCondition(u => u.Email == login.Email).SingleOrDefaultAsync();
 
             if (user == null)
                 return BadRequest(new Response(false, "User or password invalid"));

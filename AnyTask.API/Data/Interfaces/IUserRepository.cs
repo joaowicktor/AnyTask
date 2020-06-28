@@ -9,7 +9,5 @@ namespace AnyTask.API.Data.Interfaces
 {
     public interface IUserRepository : IRepositoryBase<User>
     {
-        Task<User> FindByEmailAsync(string email);
-        Task<User> GetUserWithTasks(int userId);
     }
 }
