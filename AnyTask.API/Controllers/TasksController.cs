@@ -1,5 +1,6 @@
 ﻿using AnyTask.API.Data.Interfaces;
 using AnyTask.API.Helpers;
+using AnyTask.API.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -41,21 +42,25 @@ namespace AnyTask.API.Controllers
         /// Create new task.
         /// </summary>
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromBody] Data.Entities.Task task)
+        public async Task<IActionResult> CreateTask([FromBody] TaskViewModel task)
         {
             try
             {
+                if (!ModelState.IsValid)
+                    return BadRequest(new Response(false, "Data is invalid"));
+
                 var user = await _uow.UserRepository.FindById(task.UserId);
                 if (user == null)
                     return BadRequest(new Response(false, "User not found"));
 
-                _uow.TaskRepository.Create(task);
+                var newTask = new Data.Entities.Task(task.Description, task.UserId);
+                _uow.TaskRepository.Create(newTask);
                 var rows = await _uow.CommitAsync();
 
                 if (rows == 0)
                     return BadRequest(new Response(false, "Something went wrong when create task"));
 
-                return Ok(new Response(true, "Task create successfully!", task));
+                return Ok(new Response(true, "Task create successfully!", newTask));
             } catch (Exception e)
             {
                 _uow.Rollback();
@@ -67,7 +72,7 @@ namespace AnyTask.API.Controllers
         /// Update task.
         /// </summary>
         [HttpPut("{taskId:int}")]
-        public async Task<IActionResult> UpdateTask([FromBody] Data.Entities.Task task, [FromRoute] int taskId)
+        public async Task<IActionResult> UpdateTask([FromBody] TaskViewModel task, [FromRoute] int taskId)
         {
             try
             {

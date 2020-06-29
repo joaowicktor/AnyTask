@@ -1,6 +1,7 @@
 ﻿using AnyTask.API.Data.Entities;
 using AnyTask.API.Data.Interfaces;
 using AnyTask.API.Helpers;
+using AnyTask.API.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -28,8 +29,11 @@ namespace AnyTask.API.Controllers
         /// Login user.
         /// </summary>
         [HttpPost("login")]
-        public async Task<ActionResult<dynamic>> Login([FromBody] UserLogin login)
+        public async Task<ActionResult<dynamic>> Login([FromBody] UserLoginViewModel login)
         {
+            if (!ModelState.IsValid)
+                return BadRequest(new Response(false, "Data is invalid"));
+
             var user = await _uow.UserRepository.FindByCondition(u => u.Email == login.Email).SingleOrDefaultAsync();
 
             if (user == null)

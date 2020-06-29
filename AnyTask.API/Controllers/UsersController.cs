@@ -2,6 +2,7 @@
 using AnyTask.API.Data.Interfaces;
 using AnyTask.API.Data.Repositories;
 using AnyTask.API.Helpers;
+using AnyTask.API.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,10 @@ namespace AnyTask.API.Controllers
         public ActionResult<IEnumerable<User>> ListUsers()
         {
             var lstUsers = _uow.UserRepository.FindAll()
-                .Select(u => new User(u.Id, u.Name, u.Email, null));
+                .Select(u => new User(u.Id) {
+                    Name = u.Name,
+                    Email = u.Email
+                });
 
             return Ok(lstUsers);
         }
@@ -42,18 +46,21 @@ namespace AnyTask.API.Controllers
         /// </summary>
         [HttpPost]
         [AllowAnonymous]
-        public async Task<IActionResult> CreateUser([FromBody] User user)
+        public async Task<IActionResult> CreateUser([FromBody] UserViewModel user)
         {
             try
             {
+                if (!ModelState.IsValid)
+                    return BadRequest(new Response(false, "Data is invalid"));
+
                 var userExists = await _uow.UserRepository.FindByCondition(u => u.Email == user.Email)
                     .SingleOrDefaultAsync();
 
                 if (userExists != null)
                     return BadRequest(new Response(false, "Email already registered"));
 
-                user.Password = user.Password.SHA256Encrypt();
-                _uow.UserRepository.Create(user);
+                var newUser = new User(user.Name, user.Email, user.Password.SHA256Encrypt());
+                _uow.UserRepository.Create(newUser);
                 var rows = await _uow.CommitAsync();
 
                 if (rows == 0)

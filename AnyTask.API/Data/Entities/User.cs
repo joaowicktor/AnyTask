@@ -11,14 +11,15 @@ namespace AnyTask.API.Data.Entities
         public string Name { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
-        [JsonIgnore]
         public List<Task> Tasks { get; set; }
 
-        public User() { }
-        
-        public User(int id, string name, string email, string password)
+        public User(int id)
         {
             Id = id;
+        }
+        
+        public User(string name, string email, string password)
+        {
             Name = name;
             Email = email;
             Password = password;
